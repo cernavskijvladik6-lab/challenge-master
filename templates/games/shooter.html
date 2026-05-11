@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="shooter-game-container">
+    <h1>🔫 Стрілялка</h1>
+    
+    <div class="game-content">
+        <div class="game-area">
+            <canvas id="shooter-canvas"></canvas>
+            <div class="game-controls">
+                <button class="btn btn-primary" onclick="ShooterGame.init('shooter-canvas')">Почати Гру</button>
+                <p>Керування: Стрілки для руху, Пробіл для стрільби</p>
+            </div>
+        </div>
+        
+        <div class="game-chat">
+            <h3>💬 Чат</h3>
+            <div class="chat-container">
+                <div class="chat-messages" id="shooter-chat-messages">
+                    <p style="text-align: center; opacity: 0.5;">Немає повідомлень</p>
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="shooter-chat-input" placeholder="Напишіть повідомлення...">
+                <button onclick="sendChatMessage('games', 'shooter-chat-input', 'shooter-chat-messages')">Надіслати</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.shooter-game-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.game-content {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.game-area {
+    background: #1a1f3a;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+#shooter-canvas {
+    border: 3px solid #ff6b6b;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.game-controls {
+    text-align: center;
+}
+
+.game-chat {
+    background: #1a1f3a;
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+}
+
+@media (max-width: 1024px) {
+    .game-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .game-chat {
+        max-height: 200px;
+    }
+}
+</style>
+
+<script>
+async function sendChatMessage(room, inputId, messagesId) {
+    const input = document.getElementById(inputId);
+    if (!input.value.trim()) return;
+    
+    const response = await fetch(`/api/chat/${room}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({message: input.value})
+    });
+    
+    if (response.ok) {
+        input.value = '';
+        loadChatMessages(room, messagesId);
+    }
+}
+
+async function loadChatMessages(room, messagesId) {
+    const response = await fetch(`/api/chat/${room}`);
+    const messages = await response.json();
+    
+    const container = document.getElementById(messagesId);
+    container.innerHTML = '';
+    
+    messages.forEach(msg => {
+        const msgEl = document.createElement('div');
+        msgEl.className = 'chat-message';
+        msgEl.innerHTML = `<strong>${msg.username}:</strong> ${msg.message}`;
+        container.appendChild(msgEl);
+    });
+    
+    container.scrollTop = container.scrollHeight;
+}
+
+// Load chat on page load
+loadChatMessages('games', 'shooter-chat-messages');
+
+// Refresh chat every 2 seconds
+setInterval(() => loadChatMessages('games', 'shooter-chat-messages'), 2000);
+</script>
+{% endblock %}
